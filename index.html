@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terrain Noise Stepwise Interactive Slides</title>
+  <link rel="stylesheet" href="styles/perlin-slides.css">
+</head>
+<body>
+  <div class="deck">
+    <div class="slides">
+      <section class="slide active" data-slide>
+        <div class="panel">
+          <h1 class="title-with-count">From Naive Noise to Perlin Noise <span class="title-count">1/9</span></h1>
+          <p class="lead">
+            A naive noise field just assigns unrelated random values to nearby positions. The result is visibly speckled and blocky, which is why Perlin noise replaces raw random values with structured gradient interpolation.
+          </p>
+          <div class="layout-2" style="margin-top: 20px;">
+            <div class="card slide1-compare-card">
+              <div class="slide1-compare-grid">
+                <div class="slide1-preview">
+                  <h3>Random Noise</h3>
+                  <svg id="gradient-grid-svg" viewBox="0 0 760 760" aria-label="Naive random noise visualization"></svg>
+                </div>
+                <div class="slide1-preview">
+                  <h3>Perlin Noise</h3>
+                  <svg id="slide1-perlin-svg" viewBox="0 0 760 760" aria-label="Perlin noise visualization"></svg>
+                </div>
+              </div>
+            </div>
+            <div class="column-stack">
+              <div class="card">
+                <h3>What naive noise does</h3>
+                <p>Each sample cell gets a pseudorandom scalar value with no relationship to its neighbors. The seed makes the pattern repeatable, but not smooth.</p>
+                <h3>Why this is not enough</h3>
+                <p>Adjacent samples jump abruptly, so the image looks like static. There is no continuity, no directional structure, and no smooth transition from one region to the next.</p>
+              </div>
+              <div class="card">
+                <h3>Where Perlin improves it</h3>
+                <p>Perlin noise keeps the seedable randomness, but moves it to lattice gradients and blends locally inside each cell. The later slides build that smoother construction step by step.</p>
+                <div class="control-row">
+                  <input id="seed-input" class="seed-input" type="text" value="perlin-demo-1" aria-label="Gradient seed">
+                  <button id="apply-seed" class="secondary">Apply Seed</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-slide>
+        <div class="panel">
+          <h2 class="title-with-count">Dot Products on a Finer Grid <span class="title-count">2/9</span></h2>
+          <p class="lead">
+            Perlin noise first assigns a pseudorandom gradient vector to each lattice corner. Focus on one corner contribution at a time: each fine cell shows that corner's dot product over the full lattice, and hovering any sample reveals the exact gradient-and-offset-vector calculation.
+          </p>
+          <div class="layout-2" style="margin-top: 18px;">
+            <div class="column-stack">
+              <div class="card soft slide2-breakdown-card">
+                <h3>Pick One Corner Contribution</h3>
+                <p>Each Perlin sample is influenced by four pseudorandom corner gradient vectors. Here you isolate one of those four dot products and inspect how it changes over every lattice cell.</p>
+                <div class="control-row">
+                  <button class="secondary active" data-corner="d00">d00</button>
+                  <button class="secondary" data-corner="d10">d10</button>
+                  <button class="secondary" data-corner="d01">d01</button>
+                  <button class="secondary" data-corner="d11">d11</button>
+                </div>
+                <h3>Selected Sample Breakdown</h3>
+                <p>The teal arrow is the chosen gradient. The orange segment is the offset vector to the selected sample.</p>
+                <div class="slide2-breakdown-layout">
+                  <div class="svg-frame slide2-detail-frame">
+                    <svg id="slide2-detail-svg" viewBox="0 0 240 240" aria-label="Selected corner and offset vector detail"></svg>
+                  </div>
+                  <div class="formula-box slide2-formula-box">
+                    <div class="formula-line" style="margin: 4px 0; font-size: 0.82rem;" id="hover-position">(x, y) = (0.00, 0.00)</div>
+                    <div class="formula-line" style="margin: 4px 0; font-size: 0.82rem;" id="hover-gradient">g = (0.00, 0.00)</div>
+                    <div class="formula-line" style="margin: 4px 0; font-size: 0.82rem;" id="hover-offset">offset = (0.00, 0.00)</div>
+                    <div class="formula-line" style="margin: 4px 0; font-size: 0.82rem;" id="hover-formula">dot(g, offset) = 0.00 * 0.00 + 0.00 * 0.00 = 0.00</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card" id="slide2-dot-shell">
+              <div class="svg-stage">
+                <svg id="interpolation-grid-svg" viewBox="0 0 760 760" aria-label="Selected corner contribution across all lattice cells"></svg>
+              </div>
+              <p class="caption">
+                Hover any sample to inspect the active corner's contribution in that exact lattice cell.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-slide>
+        <div class="panel">
+          <h2 class="title-with-count">Horizontal Interpolation Inside a Cell <span class="title-count">3/9</span></h2>
+          <p class="lead">
+            Compare the two corner dot products that feed one horizontal interpolation. Hover any sample cell and the corresponding location is highlighted across both corner fields and the x-interpolated result.
+          </p>
+          <div class="layout-3" id="slide3-sync-shell" style="margin-top: 18px; position: relative;">
+            <div class="card">
+              <h3 id="slide3-left-title">Corner Dot Product: d00</h3>
+              <div class="svg-frame">
+                <svg id="slide3-left-svg" viewBox="0 0 760 760" aria-label="First corner contribution across the lattice"></svg>
+              </div>
+            </div>
+            <div class="card">
+              <h3 id="slide3-middle-title">Corner Dot Product: d10</h3>
+              <div class="svg-frame">
+                <svg id="slide3-middle-svg" viewBox="0 0 760 760" aria-label="Second corner contribution across the lattice"></svg>
+              </div>
+            </div>
+            <div class="card">
+              <h3 id="slide3-right-title">Horizontal Blend: x1</h3>
+              <div class="svg-frame">
+                <svg id="slide3-x-svg" viewBox="0 0 760 760" aria-label="Interpolation along x across the lattice"></svg>
+              </div>
+            </div>
+            <div class="card slide3-inspector" id="slide3-tooltip">
+              <p class="slide3-inspector-copy">Choose which horizontal pair to inspect. <span class="code">x1</span> blends the lower two corner dot products, while <span class="code">x2</span> blends the upper two.</p>
+              <div class="slide3-inspector-controls">
+                <button class="secondary active" data-xblend="x0">Show x1 = lerp(d00, d10)</button>
+                <button class="secondary" data-xblend="x1">Show x2 = lerp(d01, d11)</button>
+              </div>
+              <div class="mini-curve">
+                <svg id="slide3-fade-curve-svg" viewBox="0 0 280 120" aria-label="fade x curve visualization"></svg>
+              </div>
+              <div class="formula-line" id="slide3-formula">x1 = 0.00 + (0.00 - 0.00) * 0.00 = 0.00</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-slide>
+        <div class="panel">
+          <h2 class="title-with-count">Vertical Interpolation to the Final Value <span class="title-count">4/9</span></h2>
+          <p class="lead">
+            Once the two horizontal intermediate fields are built, Perlin noise blends them vertically. Hover any sample cell to track how <span class="code">x1</span> and <span class="code">x2</span> combine into the final value.
+          </p>
+          <div class="layout-3" id="slide4-sync-shell" style="margin-top: 18px;">
+            <div class="card">
+              <h3>Horizontal Field x1</h3>
+              <p>The lower-edge interpolation from <span class="code">d00</span> and <span class="code">d10</span>.</p>
+              <div class="svg-frame">
+                <svg id="slide4-x1-svg" viewBox="0 0 760 760" aria-label="Lower horizontal interpolation across the lattice"></svg>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Horizontal Field x2</h3>
+              <p>The upper-edge interpolation from <span class="code">d01</span> and <span class="code">d11</span>.</p>
+              <div class="svg-frame">
+                <svg id="slide4-x2-svg" viewBox="0 0 760 760" aria-label="Upper horizontal interpolation across the lattice"></svg>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Final Perlin Value</h3>
+              <p>The y-direction blend between <span class="code">x1</span> and <span class="code">x2</span>.</p>
+              <div class="svg-frame">
+                <svg id="slide4-final-svg" viewBox="0 0 760 760" aria-label="Final y interpolation across the lattice"></svg>
+              </div>
+            </div>
+            <div class="card slide4-inspector" id="slide4-tooltip">
+              <div class="mini-curve">
+                <svg id="slide4-fade-curve-svg" viewBox="0 0 280 120" aria-label="fade y curve visualization"></svg>
+              </div>
+              <div class="formula-line" id="slide4-position">(x, y) = (0.00, 0.00)</div>
+              <div class="formula-line" id="slide4-inputs">final uses x1 = 0.00 and x2 = 0.00</div>
+              <div class="formula-line" id="slide4-weight">v = fade(y) = 0.00</div>
+              <div class="formula-line" id="slide4-formula">final = 0.00 + (0.00 - 0.00) * 0.00 = 0.00</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-slide>
+        <div class="panel">
+          <h2 class="title-with-count">Perlin Noise at Different Frequencies <span class="title-count">5/9</span></h2>
+          <p class="lead">
+            These fields use the same seeded gradient lattice, but the input domain is scaled by different frequencies. Higher frequency means more oscillations across the same image area.
+          </p>
+          <div class="layout-3" style="margin-top: 18px;">
+            <div class="card">
+              <h3>Frequency 1</h3>
+              <p><span class="code">p(x, y)</span></p>
+              <div class="svg-frame">
+                <svg id="freq1-svg" viewBox="0 0 760 760" aria-label="Perlin noise frequency 1"></svg>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Frequency 2</h3>
+              <p><span class="code">p(2x, 2y)</span></p>
+              <div class="svg-frame">
+                <svg id="freq2-svg" viewBox="0 0 760 760" aria-label="Perlin noise frequency 2"></svg>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Frequency 4</h3>
+              <p><span class="code">p(4x, 4y)</span></p>
+              <div class="svg-frame">
+                <svg id="freq4-svg" viewBox="0 0 760 760" aria-label="Perlin noise frequency 4"></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-slide>
+        <div class="panel">
+          <h2 class="title-with-count">Composited fBM With More Octaves <span class="title-count">6/9</span></h2>
+          <p class="lead">
+            fBM sums multiple octaves of Perlin noise. Compare the single base octave against 3-octave and 5-octave stacks using the standard rule: frequency doubles each octave and amplitude halves each octave.
+          </p>
+          <div class="layout-3" style="margin-top: 18px;">
+            <div class="card">
+              <h3>No Octaves</h3>
+              <p><span class="code">f(x, y) = p(x, y)</span></p>
+              <div class="svg-frame">
+                <svg id="fbm3-svg" viewBox="0 0 760 760" aria-label="Single-octave Perlin noise"></svg>
+              </div>
+            </div>
+            <div class="card">
+              <h3>3 Octaves</h3>
+              <p><span class="code">f(x, y) = p(x, y) + 0.5p(2x, 2y) + 0.25p(4x, 4y)</span></p>
+              <div class="svg-frame">
+                <svg id="fbm5-svg" viewBox="0 0 760 760" aria-label="fBM with 3 octaves"></svg>
+              </div>
+            </div>
+            <div class="card">
+              <h3>5 Octaves</h3>
+              <p><span class="code">f(x, y) = p(x, y) + 0.5p(2x, 2y) + 0.25p(4x, 4y) + 0.125p(8x, 8y) + 0.0625p(16x, 16y)</span></p>
+              <div class="svg-frame">
+                <svg id="fbm6-svg" viewBox="0 0 760 760" aria-label="fBM with 5 octaves"></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-slide>
+        <div class="panel">
+          <h2 class="title-with-count">Different Amplitude Decay Rules <span class="title-count">7/9</span></h2>
+          <p class="lead">
+            The base octave frequencies are the same, but the amplitude weights change. Exponential decay is the common graphics default; linear decay and no decay shift much more energy into the higher frequencies.
+          </p>
+          <div class="layout-3" style="margin-top: 18px;">
+            <div class="card">
+              <h3>Exponential Decay</h3>
+              <p><span class="code">a_i = 0.5^i</span></p>
+              <div class="svg-frame">
+                <svg id="decay-exp-svg" viewBox="0 0 760 760" aria-label="fBM with exponential decay"></svg>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Linear Decay</h3>
+              <p><span class="code">a_i = 1 - i / N</span></p>
+              <div class="svg-frame">
+                <svg id="decay-linear-svg" viewBox="0 0 760 760" aria-label="fBM with linear decay"></svg>
+              </div>
+            </div>
+            <div class="card">
+              <h3>No Decay</h3>
+              <p><span class="code">a_i = 1</span></p>
+              <div class="svg-frame">
+                <svg id="decay-none-svg" viewBox="0 0 760 760" aria-label="fBM with no decay"></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-slide>
+        <div class="panel">
+          <h2 class="title-with-count">Solving Seams With Wrapped Gradient Lookup <span class="title-count">8/9</span></h2>
+          <p class="lead">
+            The repeated field on the left reuses a non-tileable gradient lattice, so opposite edges disagree. On the right, gradient lookup wraps at the boundary, making the repeated texture continuous across tile edges.
+          </p>
+          <div class="layout-2" style="margin-top: 18px;">
+            <div class="card">
+              <h3>Seamed Repeat</h3>
+              <div class="svg-frame">
+                <svg id="seamed-repeat-svg" viewBox="0 0 760 760" aria-label="Seamed repeated Perlin texture"></svg>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Wrapped Lookup</h3>
+              <div class="svg-frame">
+                <svg id="wrapped-repeat-svg" viewBox="0 0 760 760" aria-label="Tileable Perlin texture with wrapped gradient lookup"></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-slide>
+        <div class="panel">
+          <h2 class="title-with-count">fBM: Perlin Noise vs Sin-Based Noise <span class="title-count">9/9</span></h2>
+          <p class="lead">
+            Both images use multiscale summation, but the base signal is different. Perlin-based fBM builds from coherent gradient noise, while the sinusoid-based version is still visibly more periodic even after stacking octaves.
+          </p>
+          <div class="layout-2" style="margin-top: 18px;">
+            <div class="card">
+              <h3>Perlin fBM</h3>
+              <p><span class="code">sum 0.5^i * perlin(2^i x)</span></p>
+              <div class="svg-frame">
+                <svg id="fbm-perlin-vs-svg" viewBox="0 0 760 760" aria-label="Perlin fBM comparison image"></svg>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Sin-Based fBM</h3>
+              <p><span class="code">sum 0.5^i * sin(2^i x + phi_i)</span></p>
+              <div class="svg-frame">
+                <svg id="fbm-sin-vs-svg" viewBox="0 0 760 760" aria-label="Sinusoid based fBM comparison image"></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="nav">
+      <button id="prev-slide">Previous</button>
+      <div class="dots" id="slide-dots"></div>
+      <button id="next-slide">Next</button>
+    </div>
+  </div>
+  <script src="scripts/perlin-slides.js"></script>
+</body>
+</html>
